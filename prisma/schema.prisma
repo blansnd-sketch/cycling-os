@@ -1,0 +1,149 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ======================================
+// USER (US-REG-01, US-LOG-01)
+// ======================================
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  bicycles  UserBicycle[]
+  profile   UserProfile?
+}
+
+// ======================================
+// PROFILE (US-PROF-01)
+// ======================================
+model UserProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  firstName String?
+  lastName  String?
+  gender    String?
+  birthYear Int?
+  weight    Float?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// ======================================
+// BIKE TYPES
+// ======================================
+model BikeType {
+  code String @id
+  name String
+
+  templates BicycleTemplate[]
+
+}
+
+// ======================================
+// BRANDS
+// ======================================
+model Brand {
+  code String @id
+  name String
+
+  // Relation: one brand → many models
+  models BikeModel[]
+
+  // Relation: one brand → many templates
+  templates BicycleTemplate[]
+}
+
+// ======================================
+// MODELS
+// ======================================
+model BikeModel {
+  code      String @id
+  name      String
+  brandCode String
+
+  brand Brand @relation(fields: [brandCode], references: [code])
+  
+// Relation: one model → many templates
+  templates BicycleTemplate[]
+}
+
+// ======================================
+// TEMPLATES
+// ======================================
+model BicycleTemplate {
+  code      String @id
+  name      String
+  brandCode String
+  modelCode String
+  year      Int
+  typeCode  String
+
+  // Relations
+  brand Brand     @relation(fields: [brandCode], references: [code])
+  model BikeModel @relation(fields: [modelCode], references: [code])
+  type  BikeType  @relation(fields: [typeCode], references: [code])
+
+  components TemplateComponent[]
+}
+
+// ======================================
+// TEMPLATE COMPONENTS
+// ======================================
+model TemplateComponent {
+  id           String @id @default(uuid())
+  templateCode String
+  component    String
+  value        String
+
+  template BicycleTemplate @relation(fields: [templateCode], references: [code])
+}
+
+// ======================================
+// USER BICYCLE (US-BIKE-01)
+// ======================================
+model UserBicycle {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  isGhost   Boolean  @default(true)
+  isActive  Boolean  @default(true)
+
+  templateCode String?
+
+  brandId String?
+  modelId String?
+
+  inputBrandName String?
+  inputModelName String?
+
+  year Int?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  components UserBicycleComponent[]
+}
+
+// ======================================
+// USER COMPONENTS
+// ======================================
+model UserBicycleComponent {
+  id         String @id @default(uuid())
+  bicycleId  String
+  component  String
+  value      String?
+
+  bicycle UserBicycle @relation(fields: [bicycleId], references: [id])
+}
